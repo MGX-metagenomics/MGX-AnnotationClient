@@ -247,6 +247,7 @@ public class AnnotationClient {
                     for (int i = 0; i < elems.length; i++) {
                         seqrunIds[i] = Long.parseLong(elems[i]);
                     }
+                    break;
                 case 'd':
                     dirName = g.getOptarg();
                     break;
@@ -255,7 +256,7 @@ public class AnnotationClient {
             }
         }
 
-        if (assemblyName == null || host == null || apiKey == null || projectName == null) {
+        if (assemblyName == null || host == null || apiKey == null || projectName == null || seqrunIds == null) {
             System.err.println("Error.");
             System.exit(1);
         }
