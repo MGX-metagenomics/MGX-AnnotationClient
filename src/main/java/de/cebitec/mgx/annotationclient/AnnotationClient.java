@@ -11,6 +11,7 @@ import de.cebitec.mgx.dto.dto.AssemblyDTO;
 import de.cebitec.mgx.dto.dto.BinDTO;
 import de.cebitec.mgx.dto.dto.ContigDTO;
 import de.cebitec.mgx.dto.dto.GeneCoverageDTO;
+import de.cebitec.mgx.dto.dto.GeneCoverageDTOList;
 import de.cebitec.mgx.dto.dto.GeneDTO;
 import de.cebitec.mgx.dto.dto.MGXLong;
 import de.cebitec.mgx.dto.dto.SequenceDTO;
@@ -24,7 +25,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +40,7 @@ public class AnnotationClient {
     public AnnotationClient(URI host, long[] runIds, String apiKey, String projectName) {
         this.apiKey = apiKey;
         this.projectName = projectName;
-        this.rest = new JAXRSRESTAccess(null, host, true);
+        this.rest = new JAXRSRESTAccess(null, host, false);
         rest.addFilter(new APIKeyFilter(this.apiKey));
     }
 
@@ -145,7 +145,7 @@ public class AnnotationClient {
         return geneCov;
     }
 
-    public Map<String, Long> sendGenes(File gff, Map<String, Long> contigIds, Map<String, Integer> totalGeneCoverage) throws IOException, RESTException {
+    public Map<String, Long> sendGenes(File gff, Map<String, Long> contigIds, Map<String, Integer> totalGeneCoverage) throws Exception {
         Map<String, Long> geneIds = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(gff))) {
             String line;
@@ -157,11 +157,12 @@ public class AnnotationClient {
                 long contigId = contigIds.get(elems[0]);
                 int from = Integer.valueOf(elems[3]) - 1;
                 int to = Integer.valueOf(elems[4]) - 1;
+                String name = elems[8].split(";")[0].substring(3); // ID=4_1;partial=10;start_type=
                 GeneDTO gene = GeneDTO.newBuilder()
                         .setContigId(contigId)
                         .setStart(from)
                         .setStop(to)
-                        .setCoverage(totalGeneCoverage.get(elems[0]))
+                        .setCoverage(totalGeneCoverage.get(name))
                         .build();
                 MGXLong geneId = rest.put(gene, MGXLong.class, projectName, "AnnotationService", "createGene");
                 geneIds.put(elems[0], geneId.getValue());
@@ -194,27 +195,44 @@ public class AnnotationClient {
         return contigIds;
     }
 
-    public String readTaxFile(File f) throws IOException {
+    private static String readTaxFile(File f) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(f))) {
             return br.readLine();
         }
     }
 
     public void sendGeneCoverage(long runId, Map<String, Long> geneIds, Map<String, Integer> geneCoverage) throws RESTException {
+        int num = 0;
+        GeneCoverageDTOList.Builder b = GeneCoverageDTOList.newBuilder();
+
         for (Map.Entry<String, Integer> me : geneCoverage.entrySet()) {
             GeneCoverageDTO covInfo = GeneCoverageDTO.newBuilder()
                     .setGeneId(geneIds.get(me.getKey()))
                     .setRunId(runId)
                     .setCoverage(me.getValue())
                     .build();
-            rest.put(covInfo, projectName, "AnnotationService", "createGeneCoverage");
+            b.addGeneCoverage(covInfo);
+            num++;
+
+            if (num == 100) {
+                rest.put(b.build(), projectName, "AnnotationService", "createGeneCoverage");
+                b = GeneCoverageDTOList.newBuilder();
+                num = 0;
+            }
         }
+        if (num > 0) {
+            rest.put(b.build(), projectName, "AnnotationService", "createGeneCoverage");
+        }
+    }
+    
+    public void finishJob() throws RESTException {
+        rest.get(projectName, "AnnotationService", "finishAssemblyJob");
     }
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws URISyntaxException, RESTException, IOException, Exception {
+    public static void main(String[] args) throws Exception {
         /*
          * -h Host
          * -j job id
@@ -268,6 +286,10 @@ public class AnnotationClient {
         }
 
         File contigCov = new File(dir, "total_mapped.cov");
+        if (!contigCov.exists() || !contigCov.isFile() || !contigCov.canRead()) {
+            System.err.println("Cannot access contig coverage file " + contigCov.getAbsolutePath());
+            System.exit(1);
+        }
 
         File checkmReport = new File(dir, "checkm.tsv");
         if (!checkmReport.exists() || !checkmReport.isFile() || !checkmReport.canRead()) {
@@ -293,8 +315,7 @@ public class AnnotationClient {
 
         Map<String, Integer> contigCoverage = client.loadContigCoverage(contigCov);
         List<File> binFiles = client.getBinFiles(checkmReport);
-        
-        
+
         long assemblyId = client.createAssembly(assemblyName, binFiles, contigCoverage.get("total"));
 
         Map<String, Long> binIds = client.createBins(checkmReport, assemblyId);
@@ -317,6 +338,8 @@ public class AnnotationClient {
             Map<String, Integer> geneCoverage = client.readGeneCoverage(new File(dir, String.valueOf(runId) + ".tsv"));
             client.sendGeneCoverage(runId, geneIds, geneCoverage);
         }
+        
+        client.finishJob();
 
     }
 
