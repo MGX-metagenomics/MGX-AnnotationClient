@@ -49,7 +49,7 @@ public class AnnotationClient {
         AssemblyDTO assembly = AssemblyDTO.newBuilder()
                 .setName(assemblyName)
                 .setReadsAssembled(numReadsAssembled)
-                .setN50(0)
+                .setN50(n50)
                 .build();
         MGXLong assemblyId = rest.put(assembly, MGXLong.class, projectName, "AnnotationService", "createAssembly");
         return assemblyId.getValue();
