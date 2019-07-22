@@ -14,7 +14,7 @@ COPY . /tmp/
 RUN cd /tmp/ && ./build.sh && mkdir -p /vol/mgx-sw/lib/annotationclient && cp -va target/*jar /vol/mgx-sw/lib/annotationclient && \
     mkdir -p /vol/mgx-sw/bin 
 
-RUN cp AnnotationClient /vol/mgx-sw/bin
+RUN cp /tmp/AnnotationClient /vol/mgx-sw/bin
 RUN ln -s /vol/mgx-sw/bin/AnnotationClient /vol/mgx-sw/bin/SeqRunFetcher
 
 
