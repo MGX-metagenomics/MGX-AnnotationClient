@@ -224,15 +224,17 @@ public class AnnotationClient {
             rest.put(b.build(), projectName, "AnnotationService", "createGeneCoverage");
         }
     }
-    
+
     public void finishJob() throws RESTException {
-        rest.get(projectName, "AnnotationService", "finishAssemblyJob");
+        rest.get(projectName, "AnnotationService", "finishJob");
     }
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
+
+        long duration = System.currentTimeMillis();
         /*
          * -h Host
          * -j job id
@@ -317,8 +319,10 @@ public class AnnotationClient {
         List<File> binFiles = client.getBinFiles(checkmReport);
 
         long assemblyId = client.createAssembly(assemblyName, binFiles, contigCoverage.get("total"));
+        System.err.println("Created assembly id " + assemblyId);
 
         Map<String, Long> binIds = client.createBins(checkmReport, assemblyId);
+        System.err.println("Created " + binIds.size() + " bins.");
 
         Map<String, Long> contigIds = new HashMap<>();
         for (Map.Entry<String, Long> bin : binIds.entrySet()) {
@@ -329,17 +333,24 @@ public class AnnotationClient {
             }
             client.sendContigs(bin.getValue(), fasta, contigCoverage, contigIds);
         }
+        System.err.println("Sent FASTA sequences.");
 
         Map<String, Integer> totalGeneCoverage = client.readGeneCoverage(new File(dir, "featureCounts_total.tsv"));
 
         Map<String, Long> geneIds = client.sendGenes(gtf, contigIds, totalGeneCoverage);
+        System.err.println("Created " + geneIds.size() + " genes.");
 
         for (long runId : seqrunIds) {
             Map<String, Integer> geneCoverage = client.readGeneCoverage(new File(dir, String.valueOf(runId) + ".tsv"));
             client.sendGeneCoverage(runId, geneIds, geneCoverage);
         }
-        
+        System.err.println("Created gene coverage data.");
+
         client.finishJob();
+        System.err.println("Job set to FINISHED state");
+
+        duration = System.currentTimeMillis() - duration;
+        System.err.println("Complete after " + duration + " ms.");
 
     }
 
