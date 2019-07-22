@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+FUNCTION=`basename $0`
+
+java -cp /vol/mgx-sw/lib/annotationclient -jar /vol/mgx-sw/lib/annotationclient/MGX-AnnotationClient-2.0.jar de.cebitec.mgx.annotationclient.${FUNCTION} "$@"

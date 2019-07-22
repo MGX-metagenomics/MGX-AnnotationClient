@@ -12,7 +12,10 @@ RUN groupadd mgxserv && useradd -m -g mgxserv mgxserv && chown -R mgxserv /home/
 
 COPY . /tmp/
 RUN cd /tmp/ && ./build.sh && mkdir -p /vol/mgx-sw/lib/annotationclient && cp -va target/*jar /vol/mgx-sw/lib/annotationclient && \
-    mkdir -p /vol/mgx-sw/bin && cp annotationclient /vol/mgx-sw/bin
+    mkdir -p /vol/mgx-sw/bin 
+
+RUN cp AnnotationClient /vol/mgx-sw/bin
+RUN ln -s /vol/mgx-sw/bin/AnnotationClient /vol/mgx-sw/bin/SeqRunFetcher
 
 
 FROM ubuntu:18.04 

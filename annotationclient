@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-java -cp /vol/mgx-sw/lib/annotationclient -jar /vol/mgx-sw/lib/annotationclient/MGX-AnnotationClient-2.0.jar "$@"

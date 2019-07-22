@@ -80,7 +80,6 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>de.cebitec.mgx.annotationclient.AnnotationClient</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
