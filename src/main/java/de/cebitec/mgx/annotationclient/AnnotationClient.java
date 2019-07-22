@@ -119,7 +119,6 @@ public class AnnotationClient {
                         .setAssemblyId(assemblyId)
                         .setN50(n50)
                         .setTaxonomy(taxonomy)
-                        .setPredictedCds(0)
                         .build();
                 MGXLong binId = rest.put(bin, MGXLong.class, projectName, "AnnotationService", "createBin");
 
