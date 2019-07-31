@@ -36,7 +36,7 @@ public class SeqRunFetcher {
     }
 
     public SeqRunDTO fetchRun(long id) throws RESTException {
-        return rest.get(SeqRunDTO.class, projectName, "AnnotationService", "getRun", String.valueOf(id));
+        return rest.get(SeqRunDTO.class, projectName, "AnnotationService", "fetchSeqRun", String.valueOf(id));
     }
 
     public UUID initDownload(long id) throws RESTException {
