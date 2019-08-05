@@ -181,16 +181,16 @@ public class AnnotationClient {
                     .setGc(GC.gc(seq))
                     .setLengthBp(seq.getSequence().length)
                     .setCoverage(contigCoverage.containsKey(seqName) ? contigCoverage.get(seqName) : 0)
-                    .setName(new String(seq.getName()))
+                    .setName(seqName)
                     .build();
 
             MGXLong contigId = rest.put(contig, MGXLong.class, projectName, "AnnotationService", "createContig");
             SequenceDTO dto = SequenceDTO.newBuilder()
-                    .setName(new String(seq.getName()))
+                    .setName(seqName)
                     .setSequence(new String(seq.getSequence()))
                     .build();
             rest.put(dto, projectName, "AnnotationService", "appendSequence", String.valueOf(binId));
-            contigIds.put(new String(seq.getName()), contigId.getValue());
+            contigIds.put(seqName, contigId.getValue());
         }
         return contigIds;
     }
