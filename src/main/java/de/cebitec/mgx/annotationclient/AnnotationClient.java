@@ -161,7 +161,7 @@ public class AnnotationClient {
                         .setContigId(contigId)
                         .setStart(from)
                         .setStop(to)
-                        .setCoverage(totalGeneCoverage.get(name))
+                        .setCoverage(totalGeneCoverage.containsKey(name) ? totalGeneCoverage.get(name) : 0)
                         .build();
                 MGXLong geneId = rest.put(gene, MGXLong.class, projectName, "AnnotationService", "createGene");
                 geneIds.put(elems[0], geneId.getValue());
@@ -175,11 +175,12 @@ public class AnnotationClient {
         SeqReaderI<? extends DNASequenceI> reader = SeqReaderFactory.getReader(fasta.getAbsolutePath());
         while (reader.hasMoreElements()) {
             DNASequenceI seq = reader.nextElement();
+            String seqName = new String(seq.getName());
             ContigDTO contig = ContigDTO.newBuilder()
                     .setBinId(binId)
                     .setGc(GC.gc(seq))
                     .setLengthBp(seq.getSequence().length)
-                    .setCoverage(contigCoverage.get(new String(seq.getName())))
+                    .setCoverage(contigCoverage.containsKey(seqName) ? contigCoverage.get(seqName) : 0)
                     .setName(new String(seq.getName()))
                     .build();
 
