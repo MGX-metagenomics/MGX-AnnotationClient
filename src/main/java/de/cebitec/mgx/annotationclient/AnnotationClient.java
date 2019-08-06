@@ -96,9 +96,9 @@ public class AnnotationClient {
 
                 int n50;
                 String taxonomy;
-                File binFasta = new File(f.getParentFile(), split[0]);
+                File binFasta = new File(f.getParentFile(), split[0] + ".fas");
                 n50 = N50.n50(binFasta);
-                File taxFile = new File(f.getParentFile(), split[0].replace(".fa", ".tax"));
+                File taxFile = new File(f.getParentFile(), split[0] + ".tax");
                 taxonomy = readTaxFile(taxFile);
 
                 String binName;
