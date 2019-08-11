@@ -7,6 +7,7 @@ package de.cebitec.mgx.annotationclient;
 
 import de.cebitec.gpms.rest.RESTAccessI;
 import de.cebitec.gpms.rest.RESTException;
+import de.cebitec.mgx.annotationclient.model.Bin;
 import de.cebitec.mgx.dto.dto.AssemblyDTO;
 import de.cebitec.mgx.dto.dto.BinDTO;
 import de.cebitec.mgx.dto.dto.ContigDTO;
@@ -82,9 +83,9 @@ public class AnnotationClient {
         return fNames;
     }
 
-    public Map<String, Long> createBins(File f, long assemblyId) throws Exception {
+    public List<Bin> createBins(File f, long assemblyId) throws Exception {
 
-        Map<String, Long> binIds = new HashMap<>();
+        List<Bin> bins = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(f))) {
             br.readLine(); // skip over header
             for (String line = br.readLine(); line != null; line = br.readLine()) {
@@ -102,17 +103,17 @@ public class AnnotationClient {
                 taxonomy = readTaxFile(taxFile);
 
                 String binName;
-                if (split[1].contains("unbinned")) {
+                if (split[0].contains("unbinned") || split[0].contains("Unbinned")) {
                     binName = "Unbinned";
                 } else {
-                    int binNumber = Integer.valueOf(split[0].substring(split[0].lastIndexOf(".")));
+                    int binNumber = Integer.valueOf(split[0].substring(split[0].lastIndexOf(".") + 1));
                     binName = "Bin " + binNumber;
                 }
                 //String taxonomy = split[1];
 
                 float completeness = Float.valueOf(split[11]);
                 float contamination = Float.valueOf(split[12]);
-                BinDTO bin = BinDTO.newBuilder()
+                BinDTO binDTO = BinDTO.newBuilder()
                         .setName(binName)
                         .setCompleteness(completeness)
                         .setContamination(contamination)
@@ -120,13 +121,18 @@ public class AnnotationClient {
                         .setN50(n50)
                         .setTaxonomy(taxonomy)
                         .build();
-                MGXLong binId = rest.put(bin, MGXLong.class, projectName, "AnnotationService", "createBin");
+                MGXLong binId = rest.put(binDTO, MGXLong.class, projectName, "AnnotationService", "createBin");
 
-                binIds.put(binName, binId.getValue());
-                return binIds;
+                Bin bin = new Bin();
+                bin.setId(binId.getValue());
+                bin.setName(binName);
+                bin.setFASTA(binFasta);
+
+                bins.add(bin);
+
             }
         }
-        return null;
+        return bins;
     }
 
     public Map<String, Integer> readGeneCoverage(File featCount) throws IOException {
@@ -170,14 +176,14 @@ public class AnnotationClient {
         return geneIds;
     }
 
-    public Map<String, Long> sendContigs(long binId, File fasta, Map<String, Integer> contigCoverage, Map<String, Long> contigIds) throws Exception {
+    public Map<String, Long> sendContigs(Bin bin, Map<String, Integer> contigCoverage, Map<String, Long> contigIds) throws Exception {
 
-        SeqReaderI<? extends DNASequenceI> reader = SeqReaderFactory.getReader(fasta.getAbsolutePath());
+        SeqReaderI<? extends DNASequenceI> reader = SeqReaderFactory.getReader(bin.getFASTA().getAbsolutePath());
         while (reader.hasMoreElements()) {
             DNASequenceI seq = reader.nextElement();
             String seqName = new String(seq.getName());
             ContigDTO contig = ContigDTO.newBuilder()
-                    .setBinId(binId)
+                    .setBinId(bin.getId())
                     .setGc(GC.gc(seq))
                     .setLengthBp(seq.getSequence().length)
                     .setCoverage(contigCoverage.containsKey(seqName) ? contigCoverage.get(seqName) : 0)
@@ -189,7 +195,7 @@ public class AnnotationClient {
                     .setName(seqName)
                     .setSequence(new String(seq.getSequence()))
                     .build();
-            rest.put(dto, projectName, "AnnotationService", "appendSequence", String.valueOf(binId));
+            rest.put(dto, projectName, "AnnotationService", "appendSequence", String.valueOf(bin.getId()));
             contigIds.put(seqName, contigId.getValue());
         }
         return contigIds;
@@ -321,17 +327,12 @@ public class AnnotationClient {
         long assemblyId = client.createAssembly(assemblyName, binFiles, contigCoverage.get("total"));
         System.err.println("Created assembly id " + assemblyId);
 
-        Map<String, Long> binIds = client.createBins(checkmReport, assemblyId);
-        System.err.println("Created " + binIds.size() + " bins.");
+        List<Bin> bins = client.createBins(checkmReport, assemblyId);
+        System.err.println("Created " + bins.size() + " bins.");
 
         Map<String, Long> contigIds = new HashMap<>();
-        for (Map.Entry<String, Long> bin : binIds.entrySet()) {
-            File fasta = new File(dir, bin.getKey() + ".fas");
-            if (!fasta.exists() && fasta.canRead()) {
-                System.err.println("Cannot access FASTA file " + fasta.getAbsolutePath());
-                System.exit(1);
-            }
-            client.sendContigs(bin.getValue(), fasta, contigCoverage, contigIds);
+        for (Bin bin : bins) {
+            client.sendContigs(bin, contigCoverage, contigIds);
         }
         System.err.println("Sent FASTA sequences.");
 
