@@ -25,6 +25,6 @@ public class GC {
                     gc++;
             }
         }
-        return gc/sequence.length;
+        return gc*1f/sequence.length;
     }
 }
