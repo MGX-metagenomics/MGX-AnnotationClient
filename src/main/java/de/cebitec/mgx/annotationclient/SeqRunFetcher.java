@@ -12,6 +12,7 @@ import de.cebitec.mgx.dto.dto.SeqRunDTO;
 import de.cebitec.mgx.dto.dto.SequenceDTO;
 import de.cebitec.mgx.dto.dto.SequenceDTOList;
 import de.cebitec.mgx.restgpms.JAXRSRESTAccess;
+import de.cebitec.mgx.seqstorage.AsyncWriter;
 import de.cebitec.mgx.seqstorage.PairedEndFASTQWriter;
 import de.cebitec.mgx.seqstorage.QualityDNASequence;
 import de.cebitec.mgx.seqstorage.QualityEncoding;
@@ -20,6 +21,7 @@ import de.cebitec.mgx.sequence.SeqWriterI;
 import gnu.getopt.Getopt;
 import java.net.URI;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 public class SeqRunFetcher {
 
@@ -98,6 +100,7 @@ public class SeqRunFetcher {
         SeqRunDTO run = client.fetchRun(seqrunId);
         if (run.getIsPaired()) {
             SeqWriterI<DNAQualitySequenceI> writer = new PairedEndFASTQWriter(String.valueOf(seqrunId) + ".fq", QualityEncoding.Sanger);
+            SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(Executors.newFixedThreadPool(2), writer);
             UUID session = client.initDownload(seqrunId);
             SequenceDTOList dtos = client.fetchSequences(session);
             while (dtos.getSeqCount() > 0) {
@@ -107,11 +110,13 @@ public class SeqRunFetcher {
                     qseq.setName(s.getName().getBytes());
                     qseq.setSequence(s.getSequence().getBytes());
                     qseq.setQuality(s.getQuality().toByteArray());
-                    writer.addSequence(qseq);
+                    aWriter.addSequence(qseq);
                 }
             }
             client.closeDownload(session);
+            aWriter.close();
         }
+        
 
         duration = System.currentTimeMillis() - duration;
         System.err.println("Complete after " + duration + " ms.");

@@ -193,7 +193,7 @@ public class AnnotationClient {
 
                 if (chunkSize == 200) {
                     List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createGenes").getLongList();
-                    for (int i = allGenes.size() - 100; i < allGenes.size(); i++) {
+                    for (int i = allGenes.size() - 200; i < allGenes.size(); i++) {
                         allGenes.get(i).setId(generatedIDs.get(i));
                     }
                     chunk = GeneDTOList.newBuilder();
@@ -216,7 +216,7 @@ public class AnnotationClient {
     public List<Contig> sendContigs(Bin bin, Map<String, Integer> contigCoverage) throws Exception {
 
         List<Contig> allContigs = new ArrayList<>();
-        List<DNASequenceI> seqs = new ArrayList<>();
+        List<Contig> curChunk = new ArrayList<>();
         ContigDTOList.Builder contigDTOs = ContigDTOList.newBuilder();
 
         SeqReaderI<? extends DNASequenceI> reader = SeqReaderFactory.getReader(bin.getFASTA().getAbsolutePath());
@@ -235,30 +235,29 @@ public class AnnotationClient {
             c.setName(seqName);
             c.setSequence(new String(seq.getSequence()));
             allContigs.add(c);
+            curChunk.add(c);
 
-            seqs.add(seq);
             contigDTOs.addContig(contig);
 
             // send chunk
-            if (seqs.size() == 100) {
+            if (curChunk.size() == 100) {
                 MGXLongList contigIdList = rest.put(contigDTOs.build(), MGXLongList.class, projectName, "AnnotationService", "createContigs");
                 List<Long> generatedIDs = contigIdList.getLongList();
-                for (int i = allContigs.size() - seqs.size(); i < allContigs.size(); i++) {
-                    allContigs.get(i).setId(generatedIDs.get(i));
+                for (int i = 0; i < curChunk.size(); i++) {
+                    curChunk.get(i).setId(generatedIDs.get(i));
                 }
                 contigDTOs = ContigDTOList.newBuilder();
-                seqs.clear();
+                curChunk.clear();
             }
         }
 
         // flush remainder
-        if (seqs.size() > 0) {
+        if (curChunk.size() > 0) {
             MGXLongList contigIdList = rest.put(contigDTOs.build(), MGXLongList.class, projectName, "AnnotationService", "createContigs");
             List<Long> generatedIDs = contigIdList.getLongList();
-            for (int i = allContigs.size() - seqs.size(); i < allContigs.size(); i++) {
-                allContigs.get(i).setId(generatedIDs.get(i));
+            for (int i = curChunk.size(); i < curChunk.size(); i++) {
+                curChunk.get(i).setId(generatedIDs.get(i));
             }
-            seqs.clear();
         }
 
         //
@@ -295,12 +294,12 @@ public class AnnotationClient {
     }
 
     public void sendGeneCoverage(long runId, List<Gene> genes, Map<String, Integer> geneCoverage) throws RESTException {
-        
+
         Map<String, Long> geneIds = new HashMap<>();
         for (Gene g : genes) {
             geneIds.put(g.getName(), g.getId());
         }
-        
+
         int num = 0;
         GeneCoverageDTOList.Builder b = GeneCoverageDTOList.newBuilder();
 
