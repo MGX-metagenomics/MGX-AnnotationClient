@@ -274,6 +274,7 @@ public class AnnotationClient {
             num++;
 
             if (num == 20) {
+                chunk.setComplete(false);
                 rest.put(chunk.build(), projectName, "AnnotationService", "appendSequences", String.valueOf(bin.getId()));
                 chunk = SequenceDTOList.newBuilder();
                 num = 0;
@@ -281,6 +282,7 @@ public class AnnotationClient {
         }
 
         if (num > 0) {
+            chunk.setComplete(true);
             rest.put(chunk.build(), projectName, "AnnotationService", "appendSequences", String.valueOf(bin.getId()));
         }
 
