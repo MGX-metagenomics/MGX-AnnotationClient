@@ -163,8 +163,8 @@ public class AnnotationClient {
             contigIds.put(c.getName(), c.getId());
         }
 
-        int chunkSize = 0;
         List<Gene> allGenes = new ArrayList<>();
+        List<Gene> chunkGenes = new ArrayList<>();
         GeneDTOList.Builder chunk = GeneDTOList.newBuilder();
 
         try (BufferedReader br = new BufferedReader(new FileReader(gff))) {
@@ -189,24 +189,24 @@ public class AnnotationClient {
                 Gene gene = new Gene();
                 gene.setName(geneName);
                 allGenes.add(gene);
-                chunkSize++;
+                chunkGenes.add(gene);
 
-                if (chunkSize == 200) {
+                if (chunkGenes.size() == 200) {
                     List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createGenes").getLongList();
-                    for (int i = allGenes.size() - 200; i < allGenes.size(); i++) {
-                        allGenes.get(i).setId(generatedIDs.get(i));
+                    for (int i = 0; i < chunkGenes.size(); i++) {
+                        chunkGenes.get(i).setId(generatedIDs.get(i));
                     }
                     chunk = GeneDTOList.newBuilder();
-                    chunkSize = 0;
+                    chunkGenes.clear();
                 }
             }
 
         }
 
-        if (chunkSize > 0) {
+        if (chunkGenes.size() > 0) {
             List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createGenes").getLongList();
-            for (int i = allGenes.size() - generatedIDs.size(); i < allGenes.size(); i++) {
-                allGenes.get(i).setId(generatedIDs.get(i));
+            for (int i = 0; i < chunkGenes.size(); i++) {
+                chunkGenes.get(i).setId(generatedIDs.get(i));
             }
         }
 
