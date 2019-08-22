@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 git clone -b utilities_2_0 https://github.com/MGX-metagenomics/utilities.git
 cd utilities
 mvn install -DskipTests=true
