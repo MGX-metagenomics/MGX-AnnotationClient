@@ -21,6 +21,7 @@ import de.cebitec.mgx.sequence.SeqWriterI;
 import gnu.getopt.Getopt;
 import java.net.URI;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SeqRunFetcher {
@@ -99,8 +100,9 @@ public class SeqRunFetcher {
         SeqRunFetcher client = new SeqRunFetcher(host, apiKey, projectName);
         SeqRunDTO run = client.fetchRun(seqrunId);
         if (run.getIsPaired()) {
+            ExecutorService pool = Executors.newFixedThreadPool(2);
             SeqWriterI<DNAQualitySequenceI> writer = new PairedEndFASTQWriter(String.valueOf(seqrunId) + ".fq", QualityEncoding.Sanger);
-            SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(Executors.newFixedThreadPool(2), writer);
+            SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(pool, writer);
             UUID session = client.initDownload(seqrunId);
             SequenceDTOList dtos = client.fetchSequences(session);
             while (dtos.getSeqCount() > 0) {
@@ -115,6 +117,7 @@ public class SeqRunFetcher {
             }
             client.closeDownload(session);
             aWriter.close();
+            pool.shutdown();
         }
 
         duration = System.currentTimeMillis() - duration;
