@@ -5,9 +5,9 @@
  */
 package de.cebitec.mgx.annotationclient;
 
+import de.cebitec.mgx.seqcompression.SequenceException;
 import de.cebitec.mgx.seqstorage.DNASequence;
 import de.cebitec.mgx.sequence.DNASequenceI;
-import de.cebitec.mgx.sequence.SeqStoreException;
 import static junit.framework.Assert.assertEquals;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ public class GCTest {
      * Test of gc method, of class GC.
      */
     @Test
-    public void testGc() throws SeqStoreException {
+    public void testGc() throws SequenceException {
         System.out.println("gc");
         DNASequenceI seq = new DNASequence();
         seq.setSequence("AAAAAAATTTTTTTTGCGCGCTTTTT".getBytes());

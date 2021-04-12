@@ -5,15 +5,17 @@
  */
 package de.cebitec.mgx.annotationclient;
 
+import de.cebitec.mgx.seqcompression.SequenceException;
 import de.cebitec.mgx.sequence.DNASequenceI;
 import de.cebitec.mgx.sequence.SeqReaderFactory;
 import de.cebitec.mgx.sequence.SeqReaderI;
-import de.cebitec.mgx.sequence.SeqStoreException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -21,7 +23,7 @@ import java.util.List;
  */
 public class N50 {
 
-    public static int n50(File... files) throws SeqStoreException {
+    public static int n50(File... files) throws SequenceException {
         List<DNASequenceI> seqs = new ArrayList<>();
         for (File f : files) {
             SeqReaderI<? extends DNASequenceI> reader = SeqReaderFactory.getReader(f.getAbsolutePath());
@@ -35,11 +37,16 @@ public class N50 {
         return n50(seqs);
     }
 
-    public static int n50(List<DNASequenceI> seqs) {
+    public static int n50(List<DNASequenceI> seqs) throws SequenceException {
         Collections.sort(seqs, new Comparator<DNASequenceI>() {
             @Override
             public int compare(DNASequenceI t, DNASequenceI t1) {
-                return Integer.compare(t.getSequence().length, t1.getSequence().length);
+                try {
+                    return Integer.compare(t.getSequence().length, t1.getSequence().length);
+                } catch (SequenceException ex) {
+                    Logger.getLogger(N50.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                return 0;
             }
         });
         Collections.reverse(seqs);

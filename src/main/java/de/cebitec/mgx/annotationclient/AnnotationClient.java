@@ -5,6 +5,7 @@
  */
 package de.cebitec.mgx.annotationclient;
 
+import com.google.protobuf.ByteString;
 import de.cebitec.gpms.rest.RESTAccessI;
 import de.cebitec.gpms.rest.RESTException;
 import de.cebitec.mgx.annotationclient.model.Bin;
@@ -23,6 +24,7 @@ import de.cebitec.mgx.dto.dto.MGXLongList;
 import de.cebitec.mgx.dto.dto.SequenceDTO;
 import de.cebitec.mgx.dto.dto.SequenceDTOList;
 import de.cebitec.mgx.restgpms.JAXRSRESTAccess;
+import de.cebitec.mgx.seqcompression.FourBitEncoder;
 import de.cebitec.mgx.sequence.DNASequenceI;
 import de.cebitec.mgx.sequence.SeqReaderFactory;
 import de.cebitec.mgx.sequence.SeqReaderI;
@@ -280,7 +282,7 @@ public class AnnotationClient {
         for (Contig ctg : allContigs) {
             SequenceDTO dto = SequenceDTO.newBuilder()
                     .setName(ctg.getName())
-                    .setSequence(ctg.getSequence())
+                    .setSequence(ByteString.copyFrom(FourBitEncoder.encode(ctg.getSequence().getBytes())))
                     .build();
             chunk.addSeq(dto);
             chunkBp += ctg.getSequence().length();

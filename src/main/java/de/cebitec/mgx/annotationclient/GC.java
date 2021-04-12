@@ -5,6 +5,7 @@
  */
 package de.cebitec.mgx.annotationclient;
 
+import de.cebitec.mgx.seqcompression.SequenceException;
 import de.cebitec.mgx.sequence.DNASequenceI;
 
 /**
@@ -13,7 +14,7 @@ import de.cebitec.mgx.sequence.DNASequenceI;
  */
 public class GC {
 
-    public static float gc(DNASequenceI seq) {
+    public static float gc(DNASequenceI seq) throws SequenceException {
         byte[] sequence = seq.getSequence();
         int gc = 0;
         for (byte b : sequence) {

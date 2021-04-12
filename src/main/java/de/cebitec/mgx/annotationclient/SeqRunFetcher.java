@@ -13,8 +13,8 @@ import de.cebitec.mgx.dto.dto.SequenceDTO;
 import de.cebitec.mgx.dto.dto.SequenceDTOList;
 import de.cebitec.mgx.restgpms.JAXRSRESTAccess;
 import de.cebitec.mgx.seqstorage.AsyncWriter;
+import de.cebitec.mgx.seqstorage.EncodedQualityDNASequence;
 import de.cebitec.mgx.seqstorage.PairedEndFASTQWriter;
-import de.cebitec.mgx.seqstorage.QualityDNASequence;
 import de.cebitec.mgx.seqstorage.QualityEncoding;
 import de.cebitec.mgx.sequence.DNAQualitySequenceI;
 import de.cebitec.mgx.sequence.SeqWriterI;
@@ -107,10 +107,10 @@ public class SeqRunFetcher {
             SequenceDTOList dtos = client.fetchSequences(session);
             while (dtos.getSeqCount() > 0) {
                 for (SequenceDTO s : dtos.getSeqList()) {
-                    DNAQualitySequenceI qseq = new QualityDNASequence();
+                    EncodedQualityDNASequence qseq = new EncodedQualityDNASequence();
                     qseq.setName(s.getName().getBytes());
-                    qseq.setSequence(s.getSequence().getBytes());
-                    qseq.setQuality(s.getQuality().toByteArray());
+                    qseq.setEncodedSequence(s.getSequence().toByteArray());
+                    qseq.setEncodedQuality(s.getQuality().toByteArray());
                     aWriter.addSequence(qseq);
                 }
                 dtos = client.fetchSequences(session);
