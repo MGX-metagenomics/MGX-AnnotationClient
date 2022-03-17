@@ -11,14 +11,15 @@ import de.cebitec.gpms.rest.RESTException;
 import de.cebitec.mgx.annotationclient.model.Bin;
 import de.cebitec.mgx.annotationclient.model.Contig;
 import de.cebitec.mgx.annotationclient.model.Gene;
+import de.cebitec.mgx.dto.dto;
+import de.cebitec.mgx.dto.dto.AssembledRegionDTO;
+import de.cebitec.mgx.dto.dto.AssembledRegionDTOList;
 import de.cebitec.mgx.dto.dto.AssemblyDTO;
 import de.cebitec.mgx.dto.dto.BinDTO;
 import de.cebitec.mgx.dto.dto.ContigDTO;
 import de.cebitec.mgx.dto.dto.ContigDTOList;
 import de.cebitec.mgx.dto.dto.GeneCoverageDTO;
 import de.cebitec.mgx.dto.dto.GeneCoverageDTOList;
-import de.cebitec.mgx.dto.dto.GeneDTO;
-import de.cebitec.mgx.dto.dto.GeneDTOList;
 import de.cebitec.mgx.dto.dto.MGXLong;
 import de.cebitec.mgx.dto.dto.MGXLongList;
 import de.cebitec.mgx.dto.dto.SequenceDTO;
@@ -167,7 +168,7 @@ public class AnnotationClient {
 
         List<Gene> allGenes = new ArrayList<>();
         List<Gene> chunkGenes = new ArrayList<>();
-        GeneDTOList.Builder chunk = GeneDTOList.newBuilder();
+        AssembledRegionDTOList.Builder chunk = AssembledRegionDTOList.newBuilder();
 
         try (BufferedReader br = new BufferedReader(new FileReader(gff))) {
             String line;
@@ -190,13 +191,14 @@ public class AnnotationClient {
                     from = Integer.valueOf(elems[4]) - 1;
                 }
                 String geneName = elems[8].split(";")[0].substring(3); // ID=4_1;partial=10;start_type=
-                GeneDTO geneDTO = GeneDTO.newBuilder()
+                AssembledRegionDTO geneDTO = AssembledRegionDTO.newBuilder()
                         .setContigId(contigId)
                         .setStart(from)
                         .setStop(to)
+                        .setType(dto.RegionType.CDS)
                         .setCoverage(totalGeneCoverage.containsKey(geneName) ? totalGeneCoverage.get(geneName) : 0)
                         .build();
-                chunk.addGene(geneDTO);
+                chunk.addRegion(geneDTO);
 
                 Gene gene = new Gene();
                 gene.setName(geneName);
@@ -208,7 +210,7 @@ public class AnnotationClient {
                     for (int i = 0; i < chunkGenes.size(); i++) {
                         chunkGenes.get(i).setId(generatedIDs.get(i));
                     }
-                    chunk = GeneDTOList.newBuilder();
+                    chunk = AssembledRegionDTOList.newBuilder();
                     chunkGenes.clear();
                 }
             }
@@ -321,7 +323,7 @@ public class AnnotationClient {
 
         for (Map.Entry<String, Integer> me : geneCoverage.entrySet()) {
             GeneCoverageDTO covInfo = GeneCoverageDTO.newBuilder()
-                    .setGeneId(geneIds.get(me.getKey()))
+                    .setRegionId(geneIds.get(me.getKey()))
                     .setRunId(runId)
                     .setCoverage(me.getValue())
                     .build();
