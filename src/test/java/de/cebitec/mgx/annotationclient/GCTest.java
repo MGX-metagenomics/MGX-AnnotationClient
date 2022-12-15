@@ -26,7 +26,7 @@ public class GCTest {
         DNASequenceI seq = new DNASequence();
         seq.setSequence("AAAAAAATTTTTTTTGCGCGCTTTTT".getBytes());
         float result = GC.gc(seq);
-        assertEquals(0.23076923, result, 0.000001);
+        assertEquals(23.076923, result, 0.000001);
     }
     
 }
