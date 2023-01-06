@@ -8,8 +8,8 @@ package de.cebitec.mgx.annotationclient;
 import de.cebitec.mgx.seqcompression.SequenceException;
 import de.cebitec.mgx.seqstorage.DNASequence;
 import de.cebitec.mgx.sequence.DNASequenceI;
-import static junit.framework.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  *
