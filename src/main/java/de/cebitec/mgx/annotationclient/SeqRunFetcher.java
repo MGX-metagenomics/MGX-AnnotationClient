@@ -107,10 +107,11 @@ public class SeqRunFetcher {
             SequenceDTOList dtos = client.fetchSequences(session);
             while (dtos.getSeqCount() > 0) {
                 for (SequenceDTO s : dtos.getSeqList()) {
-                    EncodedQualityDNASequence qseq = new EncodedQualityDNASequence();
+                    // verify we have an ID field here
+                    EncodedQualityDNASequence qseq = new EncodedQualityDNASequence(s.getId(),
+                            s.getSequence().toByteArray(),
+                            s.getQuality().toByteArray());
                     qseq.setName(s.getName().getBytes());
-                    qseq.setEncodedSequence(s.getSequence().toByteArray());
-                    qseq.setEncodedQuality(s.getQuality().toByteArray());
                     aWriter.addSequence(qseq);
                 }
                 dtos = client.fetchSequences(session);
@@ -118,7 +119,7 @@ public class SeqRunFetcher {
             client.closeDownload(session);
             aWriter.close();
             pool.shutdown();
-        }
+        } // no else?
 
         duration = System.currentTimeMillis() - duration;
         System.err.println("Complete after " + duration + " ms.");
