@@ -23,8 +23,7 @@ public class GCTest {
     @Test
     public void testGc() throws SequenceException {
         System.out.println("gc");
-        DNASequenceI seq = new DNASequence();
-        seq.setSequence("AAAAAAATTTTTTTTGCGCGCTTTTT".getBytes());
+        DNASequenceI seq = new DNASequence("AAAAAAATTTTTTTTGCGCGCTTTTT".getBytes());
         float result = GC.gc(seq);
         assertEquals(23.076923, result, 0.000001);
     }
