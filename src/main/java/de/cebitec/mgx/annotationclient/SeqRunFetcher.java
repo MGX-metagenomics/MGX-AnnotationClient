@@ -75,11 +75,11 @@ public class SeqRunFetcher {
         int c;
         while ((c = g.getopt()) != -1) {
             switch (c) {
-                case 'h':
-                    host = URI.create(g.getOptarg());
-                    break;
                 case 'a':
                     apiKey = g.getOptarg();
+                    break;
+                case 'h':
+                    host = URI.create(g.getOptarg());
                     break;
                 case 'p':
                     projectName = g.getOptarg();
