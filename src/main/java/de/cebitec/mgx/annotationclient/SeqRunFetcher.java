@@ -110,7 +110,8 @@ public class SeqRunFetcher {
                     // verify we have an ID field here
                     EncodedQualityDNASequence qseq = new EncodedQualityDNASequence(s.getId(),
                             s.getSequence().toByteArray(),
-                            s.getQuality().toByteArray());
+                            s.getQuality().toByteArray(),
+                            true);
                     qseq.setName(s.getName().getBytes());
                     aWriter.addSequence(qseq);
                 }
