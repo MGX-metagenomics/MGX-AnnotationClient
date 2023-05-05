@@ -12,4 +12,6 @@ cd GPMS
 mvn install -DskipTests=true
 cd ..
 
+rm -rf utilities GPMS
+
 mvn install -DskipTests=true
