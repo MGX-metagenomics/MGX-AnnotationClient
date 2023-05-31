@@ -14,6 +14,7 @@ import de.cebitec.mgx.dto.dto.SequenceDTOList;
 import de.cebitec.mgx.restgpms.JAXRSRESTAccess;
 import de.cebitec.mgx.seqstorage.AsyncWriter;
 import de.cebitec.mgx.seqstorage.EncodedQualityDNASequence;
+import de.cebitec.mgx.seqstorage.FASTQWriter;
 import de.cebitec.mgx.seqstorage.PairedEndFASTQWriter;
 import de.cebitec.mgx.seqstorage.QualityEncoding;
 import de.cebitec.mgx.sequence.DNAQualitySequenceI;
@@ -93,34 +94,41 @@ public class SeqRunFetcher {
         }
 
         if (host == null || apiKey == null || projectName == null || seqrunId == -1) {
-            System.err.println("SeqRunFetcher: Error.");
+            System.err.println("Usage: SeqRunFetcher -a apiKey -h hostUri -p projectName -r runId");
             System.exit(1);
         }
 
         SeqRunFetcher client = new SeqRunFetcher(host, apiKey, projectName);
         SeqRunDTO run = client.fetchRun(seqrunId);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+
+        SeqWriterI<DNAQualitySequenceI> writer;
+
         if (run.getIsPaired()) {
-            ExecutorService pool = Executors.newFixedThreadPool(2);
-            SeqWriterI<DNAQualitySequenceI> writer = new PairedEndFASTQWriter(String.valueOf(seqrunId) + ".fq", QualityEncoding.Sanger);
-            SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(pool, writer);
-            UUID session = client.initDownload(seqrunId);
-            SequenceDTOList dtos = client.fetchSequences(session);
-            while (dtos.getSeqCount() > 0) {
-                for (SequenceDTO s : dtos.getSeqList()) {
-                    // verify we have an ID field here
-                    EncodedQualityDNASequence qseq = new EncodedQualityDNASequence(s.getId(),
-                            s.getSequence().toByteArray(),
-                            s.getQuality().toByteArray(),
-                            true);
-                    qseq.setName(s.getName().getBytes());
-                    aWriter.addSequence(qseq);
-                }
-                dtos = client.fetchSequences(session);
+            writer = new PairedEndFASTQWriter(String.valueOf(seqrunId) + ".fq", QualityEncoding.Sanger);
+        } else {
+            writer = new FASTQWriter(String.valueOf(seqrunId) + "_single.fq", QualityEncoding.Sanger);
+        }
+
+        SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(pool, writer);
+        UUID session = client.initDownload(seqrunId);
+        SequenceDTOList dtos = client.fetchSequences(session);
+        while (dtos.getSeqCount() > 0) {
+            for (SequenceDTO s : dtos.getSeqList()) {
+                // verify we have an ID field here
+                EncodedQualityDNASequence qseq = new EncodedQualityDNASequence(s.getId(),
+                        s.getSequence().toByteArray(),
+                        s.getQuality().toByteArray(),
+                        true);
+                qseq.setName(s.getName().getBytes());
+                aWriter.addSequence(qseq);
             }
-            client.closeDownload(session);
-            aWriter.close();
-            pool.shutdown();
-        } // no else?
+            dtos = client.fetchSequences(session);
+        }
+        client.closeDownload(session);
+        aWriter.close();
+        pool.shutdown();
 
         duration = System.currentTimeMillis() - duration;
         System.err.println("Complete after " + duration + " ms.");
