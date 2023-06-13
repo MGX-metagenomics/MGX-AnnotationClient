@@ -115,7 +115,7 @@ public class SeqRunFetcher {
         UUID session = client.initDownload(seqrunId);
         SequenceDTOList dtos = client.fetchSequences(session);
         long numSeqsTotal = 0;
-        while (dtos.getSeqCount() > 0) {
+        while (!dtos.getComplete()) {
             numSeqsTotal += dtos.getSeqCount();
             for (SequenceDTO s : dtos.getSeqList()) {
                 // verify we have an ID field here
@@ -133,7 +133,7 @@ public class SeqRunFetcher {
         pool.shutdown();
 
         duration = System.currentTimeMillis() - duration;
-        System.err.println("Complete after " + duration + " ms.");
+        System.err.println("Complete after " + duration + " ms for " + numSeqsTotal + " sequences.");
 
         if (numSeqsTotal == 0) {
             System.err.println("Did not receive any sequences.");
