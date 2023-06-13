@@ -67,10 +67,10 @@ public class AnnotationClient {
 
     public Map<String, Integer> loadContigCoverage(File f) throws IOException {
         Map<String, Integer> contigCoverage = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+        try ( BufferedReader br = new BufferedReader(new FileReader(f))) {
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 String[] split = line.split("\t");
-                contigCoverage.put(split[0], Integer.parseInt(split[1]));
+                contigCoverage.put(split[0], Integer.valueOf(split[1]));
             }
         }
 
@@ -82,7 +82,17 @@ public class AnnotationClient {
 
     public List<File> getBinFiles(File checkmReport) throws IOException {
         List<File> fNames = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(checkmReport))) {
+        if (!checkmReport.exists()) {
+            // no report file, all contigs are assumed to be unbinned
+            File unbinned = new File(checkmReport.getParentFile(), "unbinned.fas");
+            if (!unbinned.exists()) {
+                System.err.println(unbinned.getAbsolutePath() + " was not found.");
+                System.exit(1);
+            }
+            fNames.add(unbinned);
+            return fNames;
+        }
+        try ( BufferedReader br = new BufferedReader(new FileReader(checkmReport))) {
             br.readLine(); // skip over header
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 String[] split = line.split("\t");
@@ -92,10 +102,44 @@ public class AnnotationClient {
         return fNames;
     }
 
-    public List<Bin> createBins(File f, long assemblyId) throws Exception {
+    public List<Bin> createBins(File checkmReport, long assemblyId) throws Exception {
 
         List<Bin> bins = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+
+        if (!checkmReport.exists()) {
+            //
+            // metatranscriptome: we have no binning info and thus all assembled
+            // transcripts are assumed to be in unbinned.fas
+            //
+            File binFasta = new File(checkmReport.getParentFile(), "unbinned.fas");
+
+            if (!binFasta.exists()) {
+                System.err.println(binFasta.getAbsolutePath() + " was not found.");
+                System.exit(1);
+            }
+
+            int n50 = N50.n50(binFasta);
+
+            BinDTO binDTO = BinDTO.newBuilder()
+                    .setName("Unbinned")
+                    .setCompleteness(0f)
+                    .setContamination(0f)
+                    .setAssemblyId(assemblyId)
+                    .setN50(n50)
+                    .setTaxonomy("root;")
+                    .build();
+            MGXLong binId = rest.put(binDTO, MGXLong.class, projectName, "AnnotationService", "createBin");
+
+            Bin bin = new Bin();
+            bin.setId(binId.getValue());
+            bin.setName("Unbinned");
+            bin.setFASTA(binFasta);
+
+            bins.add(bin);
+            return bins;
+        }
+
+        try ( BufferedReader br = new BufferedReader(new FileReader(checkmReport))) {
             br.readLine(); // skip over header
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 String[] split = line.split("\t");
@@ -106,22 +150,22 @@ public class AnnotationClient {
 
                 int n50;
                 String taxonomy;
-                File binFasta = new File(f.getParentFile(), split[0] + ".fas");
+                File binFasta = new File(checkmReport.getParentFile(), split[0] + ".fas");
                 n50 = N50.n50(binFasta);
-                File taxFile = new File(f.getParentFile(), split[0] + ".tax");
+                File taxFile = new File(checkmReport.getParentFile(), split[0] + ".tax");
                 taxonomy = readTaxFile(taxFile);
 
                 String binName;
                 if (split[0].contains("unbinned") || split[0].contains("Unbinned")) {
                     binName = "Unbinned";
                 } else {
-                    int binNumber = Integer.valueOf(split[0].substring(split[0].lastIndexOf(".") + 1));
+                    int binNumber = Integer.parseInt(split[0].substring(split[0].lastIndexOf(".") + 1));
                     binName = "Bin " + binNumber;
                 }
                 //String taxonomy = split[1];
 
-                float completeness = Float.valueOf(split[11]);
-                float contamination = Float.valueOf(split[12]);
+                float completeness = Float.parseFloat(split[11]);
+                float contamination = Float.parseFloat(split[12]);
                 BinDTO binDTO = BinDTO.newBuilder()
                         .setName(binName)
                         .setCompleteness(completeness)
@@ -146,14 +190,14 @@ public class AnnotationClient {
 
     public Map<String, Integer> readGeneCoverage(File featCount) throws IOException {
         Map<String, Integer> geneCov = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(featCount))) {
+        try ( BufferedReader br = new BufferedReader(new FileReader(featCount))) {
             String line;
             while (null != (line = br.readLine())) {
                 if (line.startsWith("#") || line.startsWith("Geneid")) {
                     continue;
                 }
                 String[] elems = line.split("\t");
-                geneCov.put(elems[0], Integer.parseInt(elems[6]));
+                geneCov.put(elems[0], Integer.valueOf(elems[6]));
             }
         }
         return geneCov;
@@ -170,7 +214,7 @@ public class AnnotationClient {
         List<Gene> chunkGenes = new ArrayList<>();
         AssembledRegionDTOList.Builder chunk = AssembledRegionDTOList.newBuilder();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(gff))) {
+        try ( BufferedReader br = new BufferedReader(new FileReader(gff))) {
             String line;
             while (null != (line = br.readLine())) {
                 if (line.startsWith("#")) {
@@ -184,11 +228,11 @@ public class AnnotationClient {
 
                 int from, to;
                 if (elems[6].equals("+")) {
-                    from = Integer.valueOf(elems[3]) - 1;
-                    to = Integer.valueOf(elems[4]) - 1;
+                    from = Integer.parseInt(elems[3]) - 1;
+                    to = Integer.parseInt(elems[4]) - 1;
                 } else {
-                    to = Integer.valueOf(elems[3]) - 1;
-                    from = Integer.valueOf(elems[4]) - 1;
+                    to = Integer.parseInt(elems[3]) - 1;
+                    from = Integer.parseInt(elems[4]) - 1;
                 }
                 String geneName = elems[8].split(";")[0].substring(3); // ID=4_1;partial=10;start_type=
                 AssembledRegionDTO geneDTO = AssembledRegionDTO.newBuilder()
@@ -217,7 +261,7 @@ public class AnnotationClient {
 
         }
 
-        if (chunkGenes.size() > 0) {
+        if (!chunkGenes.isEmpty()) {
             List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createGenes").getLongList();
             for (int i = 0; i < chunkGenes.size(); i++) {
                 chunkGenes.get(i).setId(generatedIDs.get(i));
@@ -241,7 +285,7 @@ public class AnnotationClient {
                     .setBinId(bin.getId())
                     .setGc(GC.gc(seq))
                     .setLengthBp(seq.getSequence().length)
-                    .setCoverage(contigCoverage.containsKey(seqName) ? contigCoverage.get(seqName) : 0)
+                    .setCoverage((contigCoverage != null && contigCoverage.containsKey(seqName)) ? contigCoverage.get(seqName) : 0)
                     .setName(seqName)
                     .build();
 
@@ -267,7 +311,7 @@ public class AnnotationClient {
         }
 
         // flush remainder
-        if (curChunk.size() > 0) {
+        if (!curChunk.isEmpty()) {
             MGXLongList contigIdList = rest.put(contigDTOs.build(), MGXLongList.class, projectName, "AnnotationService", "createContigs");
             List<Long> generatedIDs = contigIdList.getLongList();
             assert curChunk.size() == generatedIDs.size();
@@ -306,7 +350,7 @@ public class AnnotationClient {
     }
 
     private static String readTaxFile(File f) throws IOException {
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+        try ( BufferedReader br = new BufferedReader(new FileReader(f))) {
             return br.readLine();
         }
     }
@@ -393,7 +437,7 @@ public class AnnotationClient {
         }
 
         if (assemblyName == null || host == null || apiKey == null || projectName == null || seqrunIds == null) {
-            System.err.println("Error.");
+            System.err.println("Usage: AnnotationClient -a apiKey -h hostUri -p projectName -s runIds -n assemblyName -d assemblyDir");
             System.exit(1);
         }
 
@@ -412,7 +456,7 @@ public class AnnotationClient {
         File checkmReport = new File(dir, "checkm.tsv");
         if (!checkmReport.exists() || !checkmReport.isFile() || !checkmReport.canRead()) {
             System.err.println("Cannot access checkm report " + checkmReport.getAbsolutePath());
-            System.exit(1);
+            System.err.println("All contigs will be treated as unbinned.");
         }
 
         for (Long runId : seqrunIds) {
@@ -438,6 +482,12 @@ public class AnnotationClient {
         System.err.println("Created assembly " + assemblyName + " with id " + assemblyId);
 
         List<Bin> bins = client.createBins(checkmReport, assemblyId);
+
+        if (bins.isEmpty()) {
+            System.err.println("No bins were found.");
+            System.exit(1);
+        }
+
         System.err.println("Created " + bins.size() + " bins.");
 
         List<Contig> contigs = new ArrayList<>();
