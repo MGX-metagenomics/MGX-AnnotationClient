@@ -114,7 +114,9 @@ public class SeqRunFetcher {
         SeqWriterI<DNAQualitySequenceI> aWriter = new AsyncWriter<>(pool, writer);
         UUID session = client.initDownload(seqrunId);
         SequenceDTOList dtos = client.fetchSequences(session);
+        long numSeqsTotal = 0;
         while (dtos.getSeqCount() > 0) {
+            numSeqsTotal += dtos.getSeqCount();
             for (SequenceDTO s : dtos.getSeqList()) {
                 // verify we have an ID field here
                 EncodedQualityDNASequence qseq = new EncodedQualityDNASequence(s.getId(),
@@ -133,6 +135,10 @@ public class SeqRunFetcher {
         duration = System.currentTimeMillis() - duration;
         System.err.println("Complete after " + duration + " ms.");
 
-    }
+        if (numSeqsTotal == 0) {
+            System.err.println("Did not receive any sequences.");
+            System.exit(1);
+        }
 
+    }
 }
