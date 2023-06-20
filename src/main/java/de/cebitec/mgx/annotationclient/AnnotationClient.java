@@ -400,6 +400,8 @@ public class AnnotationClient {
          * -j job id
          * -a API key
          * -p project name
+         * -s runids
+         * -d datadirectory
          */
 
         URI host = null;
