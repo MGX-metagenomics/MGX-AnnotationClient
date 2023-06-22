@@ -264,7 +264,7 @@ public class AnnotationClient {
                 chunkGenes.add(gene);
 
                 if (chunkGenes.size() == 200) {
-                    List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createGenes").getLongList();
+                    List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createSubregions").getLongList();
                     for (int i = 0; i < chunkGenes.size(); i++) {
                         chunkGenes.get(i).setId(generatedIDs.get(i));
                     }
