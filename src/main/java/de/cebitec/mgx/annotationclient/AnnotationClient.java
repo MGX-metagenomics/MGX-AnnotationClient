@@ -190,6 +190,7 @@ public class AnnotationClient {
 
     public Map<String, Integer> readGeneCoverage(File featCount) throws IOException {
         Map<String, Integer> geneCov = new HashMap<>();
+        // parse featureCounts output
         try ( BufferedReader br = new BufferedReader(new FileReader(featCount))) {
             String line;
             while (null != (line = br.readLine())) {
@@ -198,6 +199,19 @@ public class AnnotationClient {
                 }
                 String[] elems = line.split("\t");
                 geneCov.put(elems[0], Integer.valueOf(elems[6]));
+            }
+        }
+        return geneCov;
+    }
+
+    public Map<String, Integer> readTotalGeneCoverage(File geneCovFile) throws IOException {
+        Map<String, Integer> geneCov = new HashMap<>();
+        // parse mergeFC output
+        try ( BufferedReader br = new BufferedReader(new FileReader(geneCovFile))) {
+            String line;
+            while (null != (line = br.readLine())) {
+                String[] elems = line.split("\t");
+                geneCov.put(elems[0], Integer.valueOf(elems[1]));
             }
         }
         return geneCov;
@@ -449,7 +463,7 @@ public class AnnotationClient {
             System.exit(1);
         }
 
-        File contigCov = new File(dir, "total_mapped.cov");
+        File contigCov = new File(dir, "contig_coverage.tsv");
         if (!contigCov.exists() || !contigCov.isFile() || !contigCov.canRead()) {
             System.err.println("Cannot access contig coverage file " + contigCov.getAbsolutePath());
             System.exit(1);
@@ -501,10 +515,11 @@ public class AnnotationClient {
         }
         System.err.println("All FASTA sequences sent.");
 
-        Map<String, Integer> totalGeneCoverage = client.readGeneCoverage(new File(dir, "featureCounts_total.tsv"));
+        Map<String, Integer> totalGeneCoverage = client.readTotalGeneCoverage(new File(dir, "genecoverage__total.tsv"));
         List<Gene> genes = client.sendGenes(gtf, contigs, totalGeneCoverage);
         System.err.println("Created " + genes.size() + " genes.");
 
+        // coverage of genes per seqrun
         for (long runId : seqrunIds) {
             System.err.print("Sending individual gene coverage data for sequencing run with id " + runId);
             Map<String, Integer> geneCoverage = client.readGeneCoverage(new File(dir, String.valueOf(runId) + ".tsv"));
