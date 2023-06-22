@@ -515,7 +515,7 @@ public class AnnotationClient {
         }
         System.err.println("All FASTA sequences sent.");
 
-        Map<String, Integer> totalGeneCoverage = client.readTotalGeneCoverage(new File(dir, "genecoverage__total.tsv"));
+        Map<String, Integer> totalGeneCoverage = client.readTotalGeneCoverage(new File(dir, "genecoverage_total.tsv"));
         List<Gene> genes = client.sendGenes(gtf, contigs, totalGeneCoverage);
         System.err.println("Created " + genes.size() + " genes.");
 
