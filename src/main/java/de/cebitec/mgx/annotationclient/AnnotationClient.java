@@ -469,6 +469,12 @@ public class AnnotationClient {
             System.exit(1);
         }
 
+        File totalCov = new File(dir, "genecoverage_total.tsv");
+        if (!totalCov.exists() || !totalCov.isFile() || !totalCov.canRead()) {
+            System.err.println("Cannot access total gene coverage file " + totalCov.getAbsolutePath());
+            System.exit(1);
+        }
+
         File checkmReport = new File(dir, "checkm.tsv");
         if (!checkmReport.exists() || !checkmReport.isFile() || !checkmReport.canRead()) {
             System.err.println("Cannot access checkm report " + checkmReport.getAbsolutePath());
