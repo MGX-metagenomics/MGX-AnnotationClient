@@ -275,6 +275,7 @@ public class AnnotationClient {
 
         }
 
+        // flush final chunk
         if (!chunkGenes.isEmpty()) {
             List<Long> generatedIDs = rest.put(chunk.build(), MGXLongList.class, projectName, "AnnotationService", "createSubregions").getLongList();
             for (int i = 0; i < chunkGenes.size(); i++) {
