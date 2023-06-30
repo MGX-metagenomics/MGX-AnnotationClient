@@ -84,7 +84,7 @@ public class AnnotationClient {
         List<File> fNames = new ArrayList<>();
         if (!checkmReport.exists()) {
             // no report file, all contigs are assumed to be unbinned
-            File unbinned = new File(checkmReport.getParentFile(), "unbinned.fas");
+            File unbinned = new File(checkmReport.getParentFile(), "transcripts.fasta");
             if (!unbinned.exists()) {
                 System.err.println(unbinned.getAbsolutePath() + " was not found.");
                 System.exit(1);
@@ -109,9 +109,9 @@ public class AnnotationClient {
         if (!checkmReport.exists()) {
             //
             // metatranscriptome: we have no binning info and thus all assembled
-            // transcripts are assumed to be in unbinned.fas
+            // transcripts are assumed to be in transcripts.fasta
             //
-            File binFasta = new File(checkmReport.getParentFile(), "unbinned.fas");
+            File binFasta = new File(checkmReport.getParentFile(), "transcripts.fasta");
 
             if (!binFasta.exists()) {
                 System.err.println(binFasta.getAbsolutePath() + " was not found.");
@@ -453,6 +453,8 @@ public class AnnotationClient {
             }
         }
 
+        boolean is_metatranscriptome = false;
+
         if (assemblyName == null || host == null || apiKey == null || projectName == null || seqrunIds == null) {
             System.err.println("Usage: AnnotationClient -a apiKey -h hostUri -p projectName -s runIds -n assemblyName -d assemblyDir");
             System.exit(1);
@@ -480,6 +482,7 @@ public class AnnotationClient {
         if (!checkmReport.exists() || !checkmReport.isFile() || !checkmReport.canRead()) {
             System.err.println("Cannot access checkm report " + checkmReport.getAbsolutePath());
             System.err.println("All contigs will be treated as unbinned.");
+            is_metatranscriptome = true;
         }
 
         for (Long runId : seqrunIds) {
@@ -490,10 +493,19 @@ public class AnnotationClient {
             }
         }
 
-        File gtf = new File(dir, "final.contigs.gff");
-        if (!gtf.exists() || !gtf.isFile() || !gtf.canRead()) {
-            System.err.println("Cannot access GTF file " + gtf.getAbsolutePath());
-            System.exit(1);
+        File gtf;
+        if (is_metatranscriptome) {
+            gtf = new File(dir, "transcripts.gff");
+            if (!gtf.exists() || !gtf.isFile() || !gtf.canRead()) {
+                System.err.println("Cannot access GTF file " + gtf.getAbsolutePath());
+                System.exit(1);
+            }
+        } else {
+            gtf = new File(dir, "final.contigs.gff");
+            if (!gtf.exists() || !gtf.isFile() || !gtf.canRead()) {
+                System.err.println("Cannot access GTF file " + gtf.getAbsolutePath());
+                System.exit(1);
+            }
         }
 
         AnnotationClient client = new AnnotationClient(host, seqrunIds, apiKey, projectName);
