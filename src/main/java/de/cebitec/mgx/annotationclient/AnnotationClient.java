@@ -501,7 +501,7 @@ public class AnnotationClient {
                 System.exit(1);
             }
         } else {
-            gtf = new File(dir, "final.contigs.gff");
+            gtf = new File(dir, "contigs.gff");
             if (!gtf.exists() || !gtf.isFile() || !gtf.canRead()) {
                 System.err.println("Cannot access GTF file " + gtf.getAbsolutePath());
                 System.exit(1);
